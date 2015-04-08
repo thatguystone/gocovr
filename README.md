@@ -1,4 +1,4 @@
-# gocovr
+# gocovr [![Build Status](https://travis-ci.org/thatguystone/gocovr.svg)](https://travis-ci.org/thatguystone/gocovr)
 
 Very simple coverage reporting for golang.
 
