@@ -38,7 +38,7 @@ Running `gocovr test` will run `go test` with an added `-coverprofile=cover.out`
 
 ### gocovr [cover.out]
 
-Running `gocovr` will intepret a `cover.out` file by default; you may pass in any other file to parse.
+Running `gocovr` will interpret a `cover.out` file by default; you may pass in any other file to parse.
 
 ## Arguments
 
