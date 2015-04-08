@@ -56,7 +56,7 @@ func dump(outW, errW io.Writer, file, filter string) {
 		exec := 0
 		missing := []string{}
 
-		for _, b := range p.Blocks {
+		for _, b := range coalesce(p.Blocks) {
 			lines += b.NumStmt
 			if b.Count > 0 {
 				exec += b.NumStmt
@@ -89,6 +89,37 @@ func dump(outW, errW io.Writer, file, filter string) {
 		"TOTAL",
 		totalLines, totalExec,
 		"")
+}
+
+func coalesce(pbs []cover.ProfileBlock) []cover.ProfileBlock {
+	ret := []cover.ProfileBlock{}
+
+	join := func(a, b cover.ProfileBlock) bool {
+		if a.Count == 0 && b.Count == 0 {
+			return (a.EndLine+1) >= b.StartLine
+		}
+
+		// Don't bother coalescing covered blocks: they're not printed.
+		return false
+	}
+
+	for i := 0; i < len(pbs); i++ {
+		b := pbs[i]
+		pb := b
+
+		for (i+1) < len(pbs) && join(pb, pbs[i+1]) {
+			npb := pbs[i+1]
+			pb.EndLine = npb.EndLine
+			pb.EndCol = npb.EndCol
+			pb.NumStmt += npb.NumStmt
+			pb.Count += npb.Count
+			i++
+		}
+
+		ret = append(ret, pb)
+	}
+
+	return ret
 }
 
 func print(w *tabwriter.Writer, file, lines, exec, cover, missing string) {

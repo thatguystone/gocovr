@@ -27,12 +27,15 @@ func TestData0(t *testing.T) {
 		`TOTAL\s*1532*\s*484\s*31.6%`,
 		`8.go\s*14\s*14\s*100.0%`,
 		`5.go\s*63\s*51\s*81.0%`,
+		`3.go\s*37\s*0\s*0.0%\s*31-39,41-50`,
 	}
 
 	for _, t := range tests {
 		r := regexp.MustCompile(t)
 		a.True(r.MatchString(out.String()), "%s did not match", t)
 	}
+
+	t.Log(out.String())
 
 	a.Equal(0, err.Len())
 }
