@@ -95,12 +95,8 @@ func coalesce(pbs []cover.ProfileBlock) []cover.ProfileBlock {
 	ret := []cover.ProfileBlock{}
 
 	join := func(a, b cover.ProfileBlock) bool {
-		if a.Count == 0 && b.Count == 0 {
-			return (a.EndLine+1) >= b.StartLine
-		}
-
-		// Don't bother coalescing covered blocks: they're not printed.
-		return false
+		// Two "misses" next to each other can always be joined
+		return a.Count == 0 && b.Count == 0
 	}
 
 	for i := 0; i < len(pbs); i++ {
