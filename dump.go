@@ -163,10 +163,21 @@ func lcp(a, b string) string {
 	return min
 }
 
+func findFile(fileName string) *os.File {
+	for _, dir := range strings.Split(os.Getenv("GOPATH"), ":") {
+		abspath := fmt.Sprintf("%s/src/%s", dir, fileName)
+		f, err := os.Open(abspath)
+		if err == nil {
+			return f
+		}
+	}
+
+	return nil
+}
+
 func ignoreFile(fileName string) bool {
-	abspath := fmt.Sprintf("%s/src/%s", os.Getenv("GOPATH"), fileName)
-	f, err := os.Open(abspath)
-	if err != nil {
+	f := findFile(fileName)
+	if f == nil {
 		return false
 	}
 
