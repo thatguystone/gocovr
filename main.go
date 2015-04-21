@@ -1,5 +1,7 @@
 package main
 
+//gocovr:skip-file
+
 import (
 	"flag"
 	"fmt"

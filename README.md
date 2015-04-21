@@ -43,3 +43,11 @@ Running `gocovr` will interpret a `cover.out` file by default; you may pass in a
 ## Arguments
 
 * `-filter='.*'`: only display files that match the given regex
+
+## Skipping
+
+Sometimes you have files that you just don't need to test, and you want to skip them. To do this, add the following line, on its own line, anywhere in the file you want to skip:
+
+```go
+//gocovr:skip-file
+```

@@ -1,14 +1,20 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"text/tabwriter"
 
 	"golang.org/x/tools/cover"
+)
+
+const (
+	fileSkipDirective = "//gocovr:skip-file"
 )
 
 func dump(outW, errW io.Writer, file, filter string) {
@@ -49,6 +55,10 @@ func dump(outW, errW io.Writer, file, filter string) {
 
 	for _, p := range profs {
 		if !pat.Match([]byte(p.FileName)) {
+			continue
+		}
+
+		if ignoreFile(p.FileName) {
 			continue
 		}
 
@@ -151,4 +161,21 @@ func lcp(a, b string) string {
 	}
 
 	return min
+}
+
+func ignoreFile(fileName string) bool {
+	abspath := fmt.Sprintf("%s/src/%s", os.Getenv("GOPATH"), fileName)
+	f, err := os.Open(abspath)
+	if err != nil {
+		return false
+	}
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if s.Text() == fileSkipDirective {
+			return true
+		}
+	}
+
+	return false
 }

@@ -29,7 +29,7 @@ func TestData0(t *testing.T) {
 		`5.go\s*63\s*51\s*81.0%`,
 		`3.go\s*37\s*0\s*0.0%\s*31-108`,
 		`19.go\s*1\s*0\s*0.0%\s*1`,
-		`TOTAL\s*1533*\s*484\s*31.6%`,
+		`TOTAL\s*1459\s*431\s*29.5%`,
 	}
 
 	for _, t := range tests {
