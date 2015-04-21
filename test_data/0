@@ -812,3 +812,4 @@ github.com/thatguystone/gocovr/test_data/0/18.go:345.2,347.8 2 0
 github.com/thatguystone/gocovr/test_data/0/18.go:330.16,332.3 1 0
 github.com/thatguystone/gocovr/test_data/0/18.go:337.25,340.17 3 0
 github.com/thatguystone/gocovr/test_data/0/18.go:340.17,342.4 1 0
+github.com/thatguystone/gocovr/test_data/0/19.go:1.17,1.4 1 0

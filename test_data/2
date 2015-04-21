@@ -1,0 +1,4 @@
+mode: set
+github.com/thatguystone/gocovr/test_data/2/0.go:3.13,5.2 0 0
+github.com/thatguystone/gocovr/test_data/2/0.go:7.15,9.2 0 0
+github.com/thatguystone/gocovr/test_data/2/1.go:7.15,9.2 0 0

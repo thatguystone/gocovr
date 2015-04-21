@@ -59,5 +59,5 @@ func main() {
 
 func usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s [option]... [<cover_file.out>|test]\n", os.Args[0])
-    flag.PrintDefaults()
+	flag.PrintDefaults()
 }
