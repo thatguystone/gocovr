@@ -62,7 +62,7 @@ func dump(outW, errW io.Writer, file, filter string) {
 				exec += b.NumStmt
 			}
 
-			if b.Count == 0 {
+			if b.Count == 0 && b.NumStmt > 0 {
 				if b.StartLine == b.EndLine {
 					missing = append(missing,
 						fmt.Sprintf("%d", b.StartLine))
@@ -128,6 +128,10 @@ func printLine(w *tabwriter.Writer) {
 
 func printSummary(w *tabwriter.Writer, name string, lines, exec int, missing string) {
 	covered := float64(exec) / float64(lines)
+	if exec == 0 && lines == 0 {
+		covered = 1
+	}
+
 	print(w,
 		name,
 		fmt.Sprintf("%d", lines),
