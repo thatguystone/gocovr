@@ -5,6 +5,8 @@ Very simple coverage reporting for golang.
 Sample output:
 
 ```
+$ gocovr test
+
 Base: github.com/example/repo
 
 File   Lines  Exec  Cover   Missing
