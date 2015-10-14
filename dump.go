@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -17,24 +17,35 @@ const (
 	fileSkipDirective = "//gocovr:skip-file"
 )
 
-func dump(outW, errW io.Writer, file, filter string) {
-	log.SetFlags(0)
-	log.SetOutput(errW)
+type coverProfs []*cover.Profile
 
+func (p coverProfs) Len() int           { return len(p) }
+func (p coverProfs) Less(i, j int) bool { return p[i].FileName < p[j].FileName }
+func (p coverProfs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+func dump(outW io.Writer, files []string, filter string) (errs []error) {
 	pat, err := regexp.Compile(filter)
 	if err != nil {
-		log.Printf("Error: invalid filter: %s", err)
+		errs = append(errs, fmt.Errorf("invalid filter: %s", err))
 		return
 	}
 
-	profs, err := cover.ParseProfiles(file)
-	if err != nil {
-		log.Printf("Error: invalid coverage profile: %s", err)
+	profs := coverProfs{}
+	for _, file := range files {
+		ps, err := cover.ParseProfiles(file)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("invalid coverage profile: %s", err))
+		} else {
+			profs = append(profs, ps...)
+		}
+	}
+
+	if len(errs) > 0 {
 		return
 	}
 
 	if len(profs) == 0 {
-		fmt.Fprintln(errW, "No files covered.")
+		fmt.Fprintln(outW, "No files covered.")
 		return
 	}
 
@@ -52,6 +63,8 @@ func dump(outW, errW io.Writer, file, filter string) {
 
 	totalLines := 0
 	totalExec := 0
+
+	sort.Sort(coverProfs(profs))
 
 	for _, p := range profs {
 		if !pat.Match([]byte(p.FileName)) {
@@ -99,6 +112,8 @@ func dump(outW, errW io.Writer, file, filter string) {
 		"TOTAL",
 		totalLines, totalExec,
 		"")
+
+	return
 }
 
 func coalesce(pbs []cover.ProfileBlock) []cover.ProfileBlock {

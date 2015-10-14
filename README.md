@@ -1,6 +1,6 @@
 # gocovr [![Build Status](https://travis-ci.org/thatguystone/gocovr.svg)](https://travis-ci.org/thatguystone/gocovr)
 
-Very simple coverage reporting for golang.
+Very simple coverage reporting for golang, that supports coverage reporting on multiple packages!
 
 Sample output:
 
@@ -44,6 +44,7 @@ Running `gocovr` will interpret a `cover.out` file by default; you may pass in a
 
 ## Arguments
 
+* `-parallel=$GOMAXPROCS`: run this many package tests in parallel
 * `-filter='.*'`: only display files that match the given regex
 
 ## Skipping
