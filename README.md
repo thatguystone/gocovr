@@ -38,6 +38,8 @@ There are currently 2 ways to use gocovr:
 
 Running `gocovr test` will run `go test` with an added `-coverprofile=cover.out`. Any arguments following `test` are transparently passed through to `go test`.
 
+To run on multiple packages, just run something like `gocovr test ./... github.com/some/package`.
+
 ### gocovr [cover.out]
 
 Running `gocovr` will interpret a `cover.out` file by default; you may pass in any other file to parse.
