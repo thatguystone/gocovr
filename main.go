@@ -74,6 +74,7 @@ func main() {
 	}
 
 	if len(errs) == 0 {
+		fmt.Println()
 		errs = dump(os.Stdout, files, filter)
 	}
 
