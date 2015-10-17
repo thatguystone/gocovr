@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"regexp"
 	"runtime"
-	"sync"
 
 	"os"
 )
@@ -24,9 +23,8 @@ var (
 	parallel = 1
 	filter   = ".*"
 
-	outCovRe = regexp.MustCompile(`\t?coverage: \d*\.\d*% of statements`)
-
-	parallelCh chan struct{}
+	outCovRe  = regexp.MustCompile(`\t?coverage: \d*\.\d*% of statements`)
+	warningRe = regexp.MustCompile(`warning: no packages being tested depend on .*\n`)
 )
 
 func init() {
@@ -42,11 +40,6 @@ func main() {
 
 	if parallel < 1 {
 		parallel = 1
-	}
-
-	parallelCh = make(chan struct{}, parallel)
-	for i := 0; i < parallel; i++ {
-		parallelCh <- struct{}{}
 	}
 
 	files := []string{}
@@ -92,13 +85,6 @@ func usage() {
 	flag.PrintDefaults()
 }
 
-func runParallel() func() {
-	<-parallelCh
-	return func() {
-		parallelCh <- struct{}{}
-	}
-}
-
 func runCmd(args ...string) ([]byte, error) {
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Stdin = os.Stdin
@@ -117,6 +103,11 @@ func runMultiple(args []string) (coverfiles []string, errs []error) {
 		err error
 	}
 
+	parallelCh := make(chan struct{}, parallel)
+	for i := 0; i < parallel; i++ {
+		parallelCh <- struct{}{}
+	}
+
 	statusChs := make([]chan testStatus, len(cmds))
 
 	for i, cmd := range cmds {
@@ -124,9 +115,12 @@ func runMultiple(args []string) (coverfiles []string, errs []error) {
 		statusChs[i] = ch
 
 		go func(cmd []string, statusCh chan<- testStatus) {
-			done := runParallel()
+			<-parallelCh
 			out, err := runCmd(cmd...)
-			done()
+			parallelCh <- struct{}{}
+
+			out = outCovRe.ReplaceAll(out, []byte{})
+			out = warningRe.ReplaceAll(out, []byte{})
 
 			statusCh <- testStatus{
 				pkg: cmd[len(cmd)-1],
@@ -142,8 +136,7 @@ func runMultiple(args []string) (coverfiles []string, errs []error) {
 		if status.err != nil && len(status.out) == 0 {
 			errs = append(errs, fmt.Errorf("failed to run %s: %v", status.pkg, status.err))
 		} else {
-			out := outCovRe.ReplaceAll(status.out, []byte{})
-			os.Stdout.Write(out)
+			os.Stdout.Write(status.out)
 		}
 	}
 
@@ -151,27 +144,21 @@ func runMultiple(args []string) (coverfiles []string, errs []error) {
 }
 
 func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []error) {
-	var mtx sync.Mutex
+	pll := parallelize{}
 
 	addCmd := func(coverfile string, args []string) {
-		mtx.Lock()
+		pll.Lock()
 		coverfiles = append(coverfiles, coverfile)
 		cmds = append(cmds, args)
-		mtx.Unlock()
-	}
-
-	addErr := func(err error) {
-		mtx.Lock()
-		errs = append(errs, err)
-		mtx.Unlock()
+		pll.Unlock()
 	}
 
 	pkgSet := map[string]struct{}{}
 	addPkg := func(pkg string) (ok bool) {
-		mtx.Lock()
+		pll.Lock()
 		_, has := pkgSet[pkg]
 		pkgSet[pkg] = struct{}{}
-		mtx.Unlock()
+		pll.Unlock()
 
 		ok = !has
 
@@ -187,11 +174,10 @@ func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []erro
 		flags = args[:len(args)-len(pkgs)]
 	}
 
-	for _, pkg := range pkgs {
+	pll.do(pkgs, func(pkg string) error {
 		stdout, err := runCmd("go", "list", pkg)
 		if err != nil {
-			addErr(fmt.Errorf("failed to list pkg %s: %v", pkg, err))
-			return
+			return fmt.Errorf("failed to list pkg %s: %v", pkg, err)
 		}
 
 		sc := bufio.NewScanner(bytes.NewReader(stdout))
@@ -203,8 +189,9 @@ func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []erro
 
 			f, err := ioutil.TempFile("", "gocovr-")
 			if err != nil {
-				addErr(fmt.Errorf("failed to create tmp cover file for %s: %v", pkg, err))
-				return
+				return fmt.Errorf("failed to create tmp cover file for %s: %v",
+					pkg,
+					err)
 			}
 
 			cmd := []string{"go", "test", "-coverprofile=" + f.Name()}
@@ -214,7 +201,12 @@ func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []erro
 			addCmd(f.Name(), cmd)
 			f.Close()
 		}
-	}
+
+		return nil
+	})
+
+	pll.Wait()
+	errs = pll.errs
 
 	return
 }
@@ -229,6 +221,7 @@ func parsePkgs(args []string) []string {
 	set.Bool("v", false, "")
 	set.Bool("x", false, "")
 	set.String("covermode", "", "")
+	set.String("coverpkg", "", "")
 	set.String("coverprofile", "", "")
 	set.String("cpu", "", "")
 	set.String("parallel", "", "")

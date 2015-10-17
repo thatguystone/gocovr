@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"sort"
 	"strings"
 	"text/tabwriter"
 
@@ -17,12 +16,6 @@ const (
 	fileSkipDirective = "//gocovr:skip-file"
 )
 
-type coverProfs []*cover.Profile
-
-func (p coverProfs) Len() int           { return len(p) }
-func (p coverProfs) Less(i, j int) bool { return p[i].FileName < p[j].FileName }
-func (p coverProfs) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
 func dump(outW io.Writer, files []string, filter string) (errs []error) {
 	pat, err := regexp.Compile(filter)
 	if err != nil {
@@ -30,30 +23,39 @@ func dump(outW io.Writer, files []string, filter string) (errs []error) {
 		return
 	}
 
-	profs := coverProfs{}
-	for _, file := range files {
+	profs := profiles{}
+	pll := parallelize{}
+	pll.do(files, func(file string) error {
 		ps, err := cover.ParseProfiles(file)
 		if err != nil {
-			errs = append(errs, fmt.Errorf("invalid coverage profile: %s", err))
-		} else {
-			profs = append(profs, ps...)
+			return fmt.Errorf("invalid coverage profile: %s", err)
 		}
-	}
+
+		for _, p := range ps {
+			if ignoreFile(p.FileName) || !pat.Match([]byte(p.FileName)) {
+				continue
+			}
+
+			profs.add(p)
+		}
+
+		return nil
+	})
+
+	pll.Wait()
+	errs = pll.errs
 
 	if len(errs) > 0 {
 		return
 	}
 
-	if len(profs) == 0 {
+	if len(profs.m) == 0 {
 		fmt.Fprintln(outW, "No files covered.")
 		return
 	}
 
-	base := profs[0].FileName
-	for _, p := range profs[1:] {
-		base = lcp(base, p.FileName)
-	}
-	fmt.Fprintf(outW, "Base: %s\n\n", base)
+	base := profs.getBase()
+	fmt.Fprintf(outW, "Base: %s\n\n", profs.getBase())
 
 	w := tabwriter.NewWriter(outW, 0, 4, 2, ' ', 0)
 	defer w.Flush()
@@ -64,17 +66,8 @@ func dump(outW io.Writer, files []string, filter string) (errs []error) {
 	totalLines := 0
 	totalExec := 0
 
-	sort.Sort(coverProfs(profs))
-
-	for _, p := range profs {
-		if !pat.Match([]byte(p.FileName)) {
-			continue
-		}
-
-		if ignoreFile(p.FileName) {
-			continue
-		}
-
+	sorted := profs.sortedSlice()
+	for _, p := range sorted {
 		lines := 0
 		exec := 0
 		missing := []string{}
@@ -163,19 +156,6 @@ func printSummary(w *tabwriter.Writer, name string, lines, exec int, missing str
 		fmt.Sprintf("%d", exec),
 		fmt.Sprintf("%0.1f%%", covered*100),
 		missing)
-}
-
-func lcp(a, b string) string {
-	min := a
-	max := b
-
-	for i := 0; i < len(min) && i < len(max); i++ {
-		if min[i] != max[i] {
-			return min[:i]
-		}
-	}
-
-	return min
 }
 
 func findFile(fileName string) *os.File {

@@ -9,18 +9,23 @@ import (
 	"github.com/thatguystone/assert"
 )
 
-func testDump(t *testing.T, file, filter string) (assert.A, *bytes.Buffer, []error) {
+func testDump(t *testing.T, filter string, files ...string) (
+	assert.A,
+	*bytes.Buffer,
+	[]error) {
+
+	t.Parallel()
 	a := assert.From(t)
 
 	out := bytes.Buffer{}
 
-	errs := dump(&out, []string{file}, filter)
+	errs := dump(&out, files, filter)
 
 	return a, &out, errs
 }
 
 func TestData0(t *testing.T) {
-	a, out, errs := testDump(t, "test_data/0", ".*")
+	a, out, errs := testDump(t, ".*", "test_data/0", "test_data/0")
 	a.MustEqual(0, len(errs))
 
 	tests := []string{
@@ -37,11 +42,10 @@ func TestData0(t *testing.T) {
 	}
 
 	t.Log(out.String())
-
 }
 
 func TestData0Filter(t *testing.T) {
-	a, out, _ := testDump(t, "test_data/0", "5.go")
+	a, out, _ := testDump(t, "5.go", "test_data/0")
 
 	tests := []string{
 		`5.go\s*63\s*51\s*81.0%`,
@@ -55,14 +59,14 @@ func TestData0Filter(t *testing.T) {
 }
 
 func TestData1(t *testing.T) {
-	a, out, errs := testDump(t, "test_data/1", ".*")
+	a, out, errs := testDump(t, ".*", "test_data/1")
 
 	a.Equal(0, len(errs))
 	a.Equal("No files covered.\n", out.String())
 }
 
 func TestInvalidFilter(t *testing.T) {
-	a, out, errs := testDump(t, "test_data/1", "*")
+	a, out, errs := testDump(t, "*", "test_data/1")
 
 	a.Equal(0, out.Len())
 	a.True(strings.HasPrefix(errs[0].Error(), "invalid filter:"),
@@ -70,7 +74,7 @@ func TestInvalidFilter(t *testing.T) {
 }
 
 func TestInvalidCoverageFile(t *testing.T) {
-	a, out, errs := testDump(t, "main.go", ".*")
+	a, out, errs := testDump(t, ".*", "main.go")
 
 	a.Equal(0, out.Len())
 	a.True(strings.HasPrefix(errs[0].Error(), "invalid coverage profile:"),
@@ -78,7 +82,7 @@ func TestInvalidCoverageFile(t *testing.T) {
 }
 
 func TestData2(t *testing.T) {
-	a, out, errs := testDump(t, "test_data/2", ".*")
+	a, out, errs := testDump(t, ".*", "test_data/2")
 	a.MustEqual(0, len(errs))
 
 	tests := []string{
