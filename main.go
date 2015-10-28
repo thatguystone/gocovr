@@ -216,6 +216,7 @@ func parsePkgs(args []string) []string {
 
 	// Ignore all test flags: just get position args
 	set.Bool("a", false, "")
+	set.Bool("i", false, "")
 	set.Bool("race", false, "")
 	set.Bool("short", false, "")
 	set.Bool("v", false, "")
