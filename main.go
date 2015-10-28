@@ -214,6 +214,14 @@ func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []erro
 func parsePkgs(args []string) []string {
 	set := flag.NewFlagSet("tmp parse", flag.ContinueOnError)
 
+	set.Usage = func() {
+		cmd := exec.Command("go", "test", "-h")
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
+		os.Exit(2)
+	}
+
 	// Ignore all test flags: just get position args
 	set.Bool("a", false, "")
 	set.Bool("i", false, "")
