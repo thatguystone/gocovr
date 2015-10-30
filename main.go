@@ -170,6 +170,7 @@ func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []erro
 
 	if len(pkgs) == 0 {
 		pkgs = append(pkgs, ".")
+		flags = args
 	} else {
 		flags = args[:len(args)-len(pkgs)]
 	}
