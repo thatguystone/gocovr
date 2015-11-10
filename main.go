@@ -21,7 +21,8 @@ const (
 
 var (
 	parallel = 1
-	filter   = ".*"
+	include  = ".*"
+	exclude  = "^$"
 
 	outCovRe  = regexp.MustCompile(`\t?coverage: \d*\.\d*% of statements`)
 	warningRe = regexp.MustCompile(`warning: no packages being tested depend on .*\n`)
@@ -30,8 +31,10 @@ var (
 func init() {
 	flag.IntVar(&parallel, "parallel", runtime.GOMAXPROCS(-1),
 		"how many sub tests to run in parallel")
-	flag.StringVar(&filter, "filter", filter,
-		"filter which files to show")
+	flag.StringVar(&include, "include", include,
+		"which files to include")
+	flag.StringVar(&exclude, "exclude", exclude,
+		"which files to exclude")
 }
 
 func main() {
@@ -68,7 +71,7 @@ func main() {
 
 	if len(errs) == 0 {
 		fmt.Println()
-		errs = dump(os.Stdout, files, filter)
+		errs = dump(os.Stdout, files, include, exclude)
 	}
 
 	if len(errs) > 0 {

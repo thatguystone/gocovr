@@ -9,20 +9,20 @@ import (
 	"github.com/thatguystone/cog/check"
 )
 
-func testDump(t *testing.T, filter string, files ...string) (
+func testDump(t *testing.T, includeRe, excludeRe string, files ...string) (
 	*check.C,
 	*bytes.Buffer,
 	[]error) {
 
 	c := check.New(t)
 	out := bytes.Buffer{}
-	errs := dump(&out, files, filter)
+	errs := dump(&out, files, includeRe, excludeRe)
 
 	return c, &out, errs
 }
 
 func TestData0(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "test_data/0", "test_data/0")
+	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/0", "test_fixtures/0")
 	c.MustEqual(0, len(errs))
 
 	tests := []string{
@@ -33,21 +33,39 @@ func TestData0(t *testing.T) {
 		`TOTAL\s*1459\s*431\s*29.5%`,
 	}
 
+	c.Log(out)
+
 	for _, t := range tests {
 		r := regexp.MustCompile(t)
 		c.True(r.MatchString(out.String()), "%s did not match", t)
 	}
-
-	t.Log(out.String())
 }
 
 func TestData0Filter(t *testing.T) {
-	c, out, _ := testDump(t, "5.go", "test_data/0")
+	c, out, _ := testDump(t, "5.go", "^$", "test_fixtures/0")
 
 	tests := []string{
 		`5.go\s*63\s*51\s*81.0%`,
 		`TOTAL\s*128*\s*51\s*39.8%`,
 	}
+
+	c.Log(out)
+
+	for _, t := range tests {
+		r := regexp.MustCompile(t)
+		c.True(r.MatchString(out.String()), "%s did not match", t)
+	}
+}
+
+func TestData0Exclude(t *testing.T) {
+	c, out, _ := testDump(t, ".*", `[0-46-9]\.go`, "test_fixtures/0")
+
+	tests := []string{
+		`5.go\s*63\s*51\s*81.0%`,
+		`TOTAL\s*128*\s*51\s*39.8%`,
+	}
+
+	c.Log(out)
 
 	for _, t := range tests {
 		r := regexp.MustCompile(t)
@@ -56,22 +74,28 @@ func TestData0Filter(t *testing.T) {
 }
 
 func TestData1(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "test_data/1")
+	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/1")
 
 	c.Equal(0, len(errs))
 	c.Equal("No files covered.\n", out.String())
 }
 
 func TestInvalidFilter(t *testing.T) {
-	c, out, errs := testDump(t, "*", "test_data/1")
-
+	c, out, errs := testDump(t, "*", "^$", "test_fixtures/1")
 	c.Equal(0, out.Len())
-	c.True(strings.HasPrefix(errs[0].Error(), "invalid filter:"),
+	c.True(strings.HasPrefix(errs[0].Error(), "invalid include pattern:"),
+		"Got error: %s", errs[0].Error())
+
+	c, out, errs = testDump(t, ".*", "*", "test_fixtures/1")
+	c.Equal(0, out.Len())
+	c.True(strings.HasPrefix(errs[0].Error(), "invalid exclude pattern:"),
 		"Got error: %s", errs[0].Error())
 }
 
 func TestInvalidCoverageFile(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "main.go")
+	c, out, errs := testDump(t, ".*", "^$", "main.go")
+
+	c.Log(out)
 
 	c.Equal(0, out.Len())
 	c.True(strings.HasPrefix(errs[0].Error(), "invalid coverage profile:"),
@@ -79,13 +103,15 @@ func TestInvalidCoverageFile(t *testing.T) {
 }
 
 func TestData2(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "test_data/2")
+	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/2")
 	c.MustEqual(0, len(errs))
 
 	tests := []string{
 		`0.go\s*0\s*0\s*100.0%`,
 		`TOTAL\s*0*\s*0\s*100.0%`,
 	}
+
+	c.Log(out)
 
 	for _, t := range tests {
 		r := regexp.MustCompile(t)

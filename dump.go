@@ -16,10 +16,16 @@ const (
 	fileSkipDirective = "//gocovr:skip-file"
 )
 
-func dump(outW io.Writer, files []string, filter string) (errs []error) {
-	pat, err := regexp.Compile(filter)
+func dump(outW io.Writer, files []string, includeRe, excludeRe string) (errs []error) {
+	includePat, err := regexp.Compile(includeRe)
 	if err != nil {
-		errs = append(errs, fmt.Errorf("invalid filter: %s", err))
+		errs = append(errs, fmt.Errorf("invalid include pattern: %s", err))
+		return
+	}
+
+	excludePat, err := regexp.Compile(excludeRe)
+	if err != nil {
+		errs = append(errs, fmt.Errorf("invalid exclude pattern: %s", err))
 		return
 	}
 
@@ -32,7 +38,10 @@ func dump(outW io.Writer, files []string, filter string) (errs []error) {
 		}
 
 		for _, p := range ps {
-			if ignoreFile(p.FileName) || !pat.Match([]byte(p.FileName)) {
+			ignore := ignoreFile(p.FileName) ||
+				!includePat.Match([]byte(p.FileName)) ||
+				excludePat.Match([]byte(p.FileName))
+			if ignore {
 				continue
 			}
 
