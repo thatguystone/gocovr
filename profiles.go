@@ -83,7 +83,7 @@ func (p *profile) merge(cp *cover.Profile) {
 	defer p.Unlock()
 
 	if p.Mode != cp.Mode {
-		panic(fmt.Errorf("profile mode mismatch: %d != %d",
+		panic(fmt.Errorf("profile mode mismatch: %s != %s",
 			p.Mode,
 			cp.Mode))
 	}
