@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 
 	"golang.org/x/tools/cover"
@@ -51,6 +54,11 @@ func (ps *profiles) getBase() string {
 		} else {
 			base = lcp(base, p.FileName)
 		}
+	}
+
+	sep := fmt.Sprintf("%c", os.PathSeparator)
+	if !strings.HasSuffix(base, sep) {
+		base = filepath.Dir(base) + sep
 	}
 
 	return base
