@@ -23,7 +23,7 @@ func testDump(t *testing.T, includeRe, excludeRe string, files ...string) (
 
 func TestData0(t *testing.T) {
 	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/0", "test_fixtures/0")
-	c.MustEqual(0, len(errs))
+	c.Must.Equal(0, len(errs))
 
 	tests := []string{
 		`8.go\s*14\s*14\s*100.0%`,
@@ -81,15 +81,31 @@ func TestData1(t *testing.T) {
 }
 
 func TestInvalidFilter(t *testing.T) {
-	c, out, errs := testDump(t, "*", "^$", "test_fixtures/1")
-	c.Equal(0, out.Len())
-	c.True(strings.HasPrefix(errs[0].Error(), "invalid include pattern:"),
-		"Got error: %s", errs[0].Error())
+	tests := []struct{
+		what string
+		includeRe, excludeRe string
+	}{
+		{
+			what: "include",
+			includeRe: "*",
+			excludeRe: "^$",
+		},
+		{
+			what: "exclude",
+			includeRe: ".*",
+			excludeRe: "*",
+		},
+	}
 
-	c, out, errs = testDump(t, ".*", "*", "test_fixtures/1")
-	c.Equal(0, out.Len())
-	c.True(strings.HasPrefix(errs[0].Error(), "invalid exclude pattern:"),
-		"Got error: %s", errs[0].Error())
+	for _, test := range tests {
+		test := test
+		t.Run(test.what, func(t *testing.T) {
+			c, out, errs := testDump(t, test.includeRe, test.excludeRe, "test_fixtures/1")
+			c.Equal(0, out.Len())
+			c.True(strings.HasPrefix(errs[0].Error(), "invalid " + test.what +" pattern:"),
+				"Got error: %s", errs[0].Error())
+		})
+	}
 }
 
 func TestInvalidCoverageFile(t *testing.T) {
@@ -104,7 +120,7 @@ func TestInvalidCoverageFile(t *testing.T) {
 
 func TestData2(t *testing.T) {
 	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/2")
-	c.MustEqual(0, len(errs))
+	c.Must.Equal(0, len(errs))
 
 	tests := []string{
 		`0.go\s*0\s*0\s*100.0%`,
