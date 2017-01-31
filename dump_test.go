@@ -81,17 +81,18 @@ func TestData1(t *testing.T) {
 }
 
 func TestInvalidFilter(t *testing.T) {
-	tests := []struct{
-		what string
-		includeRe, excludeRe string
+	tests := []struct {
+		what      string
+		includeRe string
+		excludeRe string
 	}{
 		{
-			what: "include",
+			what:      "include",
 			includeRe: "*",
 			excludeRe: "^$",
 		},
 		{
-			what: "exclude",
+			what:      "exclude",
 			includeRe: ".*",
 			excludeRe: "*",
 		},
@@ -102,7 +103,7 @@ func TestInvalidFilter(t *testing.T) {
 		t.Run(test.what, func(t *testing.T) {
 			c, out, errs := testDump(t, test.includeRe, test.excludeRe, "test_fixtures/1")
 			c.Equal(0, out.Len())
-			c.True(strings.HasPrefix(errs[0].Error(), "invalid " + test.what +" pattern:"),
+			c.True(strings.HasPrefix(errs[0].Error(), "invalid "+test.what+" pattern:"),
 				"Got error: %s", errs[0].Error())
 		})
 	}
