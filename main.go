@@ -22,9 +22,10 @@ const (
 )
 
 var (
-	parallel = 1
-	include  = ".*"
-	exclude  = "^$"
+	parallel    = 1
+	include     = ".*"
+	exclude     = "^$"
+	showCovered = false
 
 	cwd = ""
 
@@ -39,6 +40,8 @@ func init() {
 		"which files to include")
 	flag.StringVar(&exclude, "exclude", exclude,
 		"which files to exclude")
+	flag.BoolVar(&showCovered, "showCovered", showCovered,
+		"show files with 100% coverage")
 
 	var err error
 	cwd, err = os.Getwd()
@@ -81,7 +84,7 @@ func main() {
 
 	if len(errs) == 0 {
 		fmt.Println()
-		errs = dump(os.Stdout, files, include, exclude)
+		errs = dump(os.Stdout, files, include, exclude, showCovered)
 	}
 
 	if len(errs) > 0 {

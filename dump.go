@@ -16,7 +16,7 @@ const (
 	fileSkipDirective = "//gocovr:skip-file"
 )
 
-func dump(outW io.Writer, files []string, includeRe, excludeRe string) (errs []error) {
+func dump(outW io.Writer, files []string, includeRe, excludeRe string, showCovered bool) (errs []error) {
 	includePat, err := regexp.Compile(includeRe)
 	if err != nil {
 		errs = append(errs, fmt.Errorf("invalid include pattern: %s", err))
@@ -100,10 +100,12 @@ func dump(outW io.Writer, files []string, includeRe, excludeRe string) (errs []e
 			}
 		}
 
-		printSummary(w,
-			strings.TrimPrefix(p.FileName, base),
-			lines, exec,
-			strings.Join(missing, ","))
+		if len(missing) > 0 || showCovered {
+			printSummary(w,
+				strings.TrimPrefix(p.FileName, base),
+				lines, exec,
+				strings.Join(missing, ","))
+		}
 
 		totalLines += lines
 		totalExec += exec

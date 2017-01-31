@@ -9,20 +9,20 @@ import (
 	"github.com/thatguystone/cog/check"
 )
 
-func testDump(t *testing.T, includeRe, excludeRe string, files ...string) (
+func testDump(t *testing.T, includeRe, excludeRe string, showCovered bool, files ...string) (
 	*check.C,
 	*bytes.Buffer,
 	[]error) {
 
 	c := check.New(t)
 	out := bytes.Buffer{}
-	errs := dump(&out, files, includeRe, excludeRe)
+	errs := dump(&out, files, includeRe, excludeRe, showCovered)
 
 	return c, &out, errs
 }
 
 func TestData0(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/0", "test_fixtures/0")
+	c, out, errs := testDump(t, ".*", "^$", true, "test_fixtures/0", "test_fixtures/0")
 	c.Must.Equal(0, len(errs))
 
 	tests := []string{
@@ -41,8 +41,27 @@ func TestData0(t *testing.T) {
 	}
 }
 
+func TestData0DontShowCovered(t *testing.T) {
+	c, out, errs := testDump(t, ".*", "^$", false, "test_fixtures/0", "test_fixtures/0")
+	c.Must.Equal(0, len(errs))
+
+	tests := []string{
+		`5.go\s*63\s*51\s*81.0%`,
+		`3.go\s*37\s*0\s*0.0%\s*31-108`,
+		`19.go\s*1\s*0\s*0.0%\s*1`,
+		`TOTAL\s*1459\s*431\s*29.5%`,
+	}
+
+	c.Log(out)
+
+	for _, t := range tests {
+		r := regexp.MustCompile(t)
+		c.True(r.MatchString(out.String()), "%s did not match", t)
+	}
+}
+
 func TestData0Filter(t *testing.T) {
-	c, out, _ := testDump(t, "5.go", "^$", "test_fixtures/0")
+	c, out, _ := testDump(t, "5.go", "^$", true, "test_fixtures/0")
 
 	tests := []string{
 		`5.go\s*63\s*51\s*81.0%`,
@@ -58,7 +77,7 @@ func TestData0Filter(t *testing.T) {
 }
 
 func TestData0Exclude(t *testing.T) {
-	c, out, _ := testDump(t, ".*", `[0-46-9]\.go`, "test_fixtures/0")
+	c, out, _ := testDump(t, ".*", `[0-46-9]\.go`, true, "test_fixtures/0")
 
 	tests := []string{
 		`5.go\s*63\s*51\s*81.0%`,
@@ -74,7 +93,7 @@ func TestData0Exclude(t *testing.T) {
 }
 
 func TestData1(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/1")
+	c, out, errs := testDump(t, ".*", "^$", true, "test_fixtures/1")
 
 	c.Equal(0, len(errs))
 	c.Equal("No files covered.\n", out.String())
@@ -101,7 +120,7 @@ func TestInvalidFilter(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.what, func(t *testing.T) {
-			c, out, errs := testDump(t, test.includeRe, test.excludeRe, "test_fixtures/1")
+			c, out, errs := testDump(t, test.includeRe, test.excludeRe, true, "test_fixtures/1")
 			c.Equal(0, out.Len())
 			c.True(strings.HasPrefix(errs[0].Error(), "invalid "+test.what+" pattern:"),
 				"Got error: %s", errs[0].Error())
@@ -110,7 +129,7 @@ func TestInvalidFilter(t *testing.T) {
 }
 
 func TestInvalidCoverageFile(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", "main.go")
+	c, out, errs := testDump(t, ".*", "^$", true, "main.go")
 
 	c.Log(out)
 
@@ -120,7 +139,7 @@ func TestInvalidCoverageFile(t *testing.T) {
 }
 
 func TestData2(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", "test_fixtures/2")
+	c, out, errs := testDump(t, ".*", "^$", true, "test_fixtures/2")
 	c.Must.Equal(0, len(errs))
 
 	tests := []string{
