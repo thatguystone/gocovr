@@ -9,8 +9,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"runtime"
+	"strings"
 
 	"os"
 )
@@ -24,6 +26,8 @@ var (
 	include  = ".*"
 	exclude  = "^$"
 
+	cwd = ""
+
 	outCovRe  = regexp.MustCompile(`\t?coverage: \d*\.\d*% of statements`)
 	warningRe = regexp.MustCompile(`warning: no packages being tested depend on .*\n`)
 )
@@ -35,6 +39,12 @@ func init() {
 		"which files to include")
 	flag.StringVar(&exclude, "exclude", exclude,
 		"which files to exclude")
+
+	var err error
+	cwd, err = os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -189,6 +199,16 @@ func buildCmds(args []string) (cmds [][]string, coverfiles []string, errs []erro
 			pkg := sc.Text()
 			if !addPkg(pkg) {
 				continue
+			}
+
+			// If working in some path outside of GOPATH, the pkg path needs
+			// to be made rel to the current path so that it still works.
+			if strings.HasPrefix(pkg, "_/") {
+				pkg = pkg[1:]
+				relPkg, err := filepath.Rel(cwd, pkg)
+				if err == nil {
+					pkg = "./" + relPkg
+				}
 			}
 
 			f, err := ioutil.TempFile("", "gocovr-")
