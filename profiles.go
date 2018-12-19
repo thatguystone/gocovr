@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,51 +9,25 @@ import (
 	"strings"
 	"sync"
 
+	"golang.org/x/sync/errgroup"
 	"golang.org/x/tools/cover"
+	"golang.org/x/tools/go/packages"
 )
 
-type profiles struct {
-	sync.Mutex
-	m map[string]*profile
-}
+type profiles []*profile
 
-type profile struct {
-	sync.Mutex
-	*cover.Profile
-}
+func (s profiles) Len() int           { return len(s) }
+func (s profiles) Less(i, j int) bool { return s[i].filename < s[j].filename }
+func (s profiles) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 
-type profileSlice []*profile
-
-func (ps *profiles) add(cp *cover.Profile) {
-	ps.Lock()
-
-	if ps.m == nil {
-		ps.m = map[string]*profile{}
-	}
-
-	p := ps.m[cp.FileName]
-	if p == nil {
-		ps.m[cp.FileName] = &profile{
-			Profile: cp,
-		}
-	}
-
-	ps.Unlock()
-
-	// First profile obviously doesn't need to be merged
-	if p != nil {
-		p.merge(cp)
-	}
-}
-
-func (ps *profiles) getBase() string {
+func (s profiles) getBase() string {
 	base := ""
 
-	for _, p := range ps.m {
+	for _, p := range s {
 		if base == "" {
-			base = p.FileName
+			base = p.filename
 		} else {
-			base = lcp(base, p.FileName)
+			base = lcp(base, p.filename)
 		}
 	}
 
@@ -64,55 +39,162 @@ func (ps *profiles) getBase() string {
 	return base
 }
 
-func (ps *profiles) sortedSlice() profileSlice {
-	s := profileSlice{}
-
-	for _, p := range ps.m {
-		s = append(s, p)
-	}
-
-	sort.Sort(s)
-
-	return s
+type profile struct {
+	filename    string
+	exec, total int
+	missing     []string
 }
 
-// The coverage output for the same file should be identical across runs,
-// assuming the file hasn't changed. If it's changed, then all bets are off.
-func (p *profile) merge(cp *cover.Profile) {
-	p.Lock()
-	defer p.Unlock()
+type profilesMaker struct {
+	covProfs    []*cover.Profile
+	sourceFiles map[string]string
 
-	if p.Mode != cp.Mode {
-		panic(fmt.Errorf("profile mode mismatch: %s != %s",
-			p.Mode,
-			cp.Mode))
+	mtx sync.Mutex
+	s   profiles
+}
+
+func makeProfiles(file string) (profiles, error) {
+	covProfs, err := cover.ParseProfiles(file)
+	if err != nil {
+		return nil, fmt.Errorf("invalid coverage profile: %v", err)
 	}
 
-	if len(p.Blocks) != len(cp.Blocks) {
-		panic(fmt.Errorf("profile block len mismatch: %d != %d",
-			len(p.Blocks),
-			len(cp.Blocks)))
+	pm := profilesMaker{
+		covProfs: covProfs,
 	}
 
-	for i := 0; i < len(p.Blocks); i++ {
-		pb := &p.Blocks[i]
-		cpb := cp.Blocks[i]
+	err = pm.loadPackageFiles()
+	if err != nil {
+		return nil, err
+	}
 
-		matches := pb.StartLine == cpb.StartLine &&
-			pb.StartCol == cpb.StartCol &&
-			pb.EndLine == cpb.EndLine &&
-			pb.EndCol == cpb.EndCol &&
-			pb.NumStmt == cpb.NumStmt
-		if !matches {
-			panic(fmt.Errorf("profile block range mismatch: %#v != %#v",
-				pb,
-				cpb))
+	err = pm.addAllProfiles()
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Sort(pm.s)
+
+	return pm.s, nil
+}
+
+func (pm *profilesMaker) loadPackageFiles() error {
+	var pkgs []string
+	seen := make(map[string]struct{})
+
+	for _, covProf := range pm.covProfs {
+		pkg := filepath.Dir(covProf.FileName)
+
+		if _, ok := seen[pkg]; !ok {
+			seen[pkg] = struct{}{}
+			pkgs = append(pkgs, pkg)
+		}
+	}
+
+	res, err := packages.Load(nil, pkgs...)
+	if err != nil {
+		return fmt.Errorf("failed to locate packages: %v", err)
+	}
+
+	pm.sourceFiles = make(map[string]string)
+	for _, pkg := range res {
+		for _, f := range pkg.GoFiles {
+			pkgFile := filepath.Join(pkg.PkgPath, filepath.Base(f))
+			pm.sourceFiles[pkgFile] = f
+		}
+	}
+
+	return nil
+}
+
+func (pm *profilesMaker) addAllProfiles() error {
+	var g errgroup.Group
+
+	for _, covProf := range pm.covProfs {
+		covProf := covProf
+
+		g.Go(func() error {
+			return pm.addProfile(covProf)
+		})
+	}
+
+	return g.Wait()
+}
+
+func (pm *profilesMaker) addProfile(covProf *cover.Profile) error {
+	absPath, ok := pm.sourceFiles[covProf.FileName]
+	if !ok {
+		return fmt.Errorf("could not locate source file for %s", covProf.FileName)
+	}
+
+	ignore, err := pm.ignoreFile(absPath)
+	if ignore || err != nil {
+		return err
+	}
+
+	p := profile{
+		filename: covProf.FileName,
+	}
+
+	for _, b := range pm.coalesce(covProf.Blocks) {
+		p.total += b.NumStmt
+		if b.Count > 0 {
+			p.exec += b.NumStmt
 		}
 
-		pb.Count += cpb.Count
+		if b.Count == 0 && b.NumStmt > 0 {
+			if b.StartLine == b.EndLine {
+				p.missing = append(p.missing,
+					fmt.Sprintf("%d", b.StartLine))
+			} else {
+				p.missing = append(p.missing,
+					fmt.Sprintf("%d-%d", b.StartLine, b.EndLine))
+			}
+		}
 	}
+
+	pm.mtx.Lock()
+	pm.s = append(pm.s, &p)
+	pm.mtx.Unlock()
+
+	return nil
 }
 
-func (ps profileSlice) Len() int           { return len(ps) }
-func (ps profileSlice) Less(i, j int) bool { return ps[i].FileName < ps[j].FileName }
-func (ps profileSlice) Swap(i, j int)      { ps[i], ps[j] = ps[j], ps[i] }
+func (*profilesMaker) coalesce(bs []cover.ProfileBlock) (res []cover.ProfileBlock) {
+	for _, b := range bs {
+		if len(res) > 0 {
+			prev := &res[len(res)-1]
+
+			// Two "misses" next to each other can always be joined
+			if b.Count == 0 && prev.Count == 0 {
+				prev.EndLine = b.EndLine
+				prev.EndCol = b.EndCol
+				prev.NumStmt += b.NumStmt
+				prev.Count += b.Count
+				continue
+			}
+		}
+
+		res = append(res, b)
+	}
+
+	return
+}
+
+func (*profilesMaker) ignoreFile(path string) (bool, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+
+	defer f.Close()
+
+	s := bufio.NewScanner(f)
+	for s.Scan() {
+		if s.Text() == "//gocovr:skip-file" {
+			return true, nil
+		}
+	}
+
+	return false, s.Err()
+}

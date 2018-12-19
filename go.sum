@@ -4,5 +4,7 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/thatguystone/cog v0.0.0-20181219042148-944a78a7ce02 h1:mVKcGsyfJi5JW8uJzV9hJXsO78SFWEzlsB+uPC4H+uQ=
 github.com/thatguystone/cog v0.0.0-20181219042148-944a78a7ce02/go.mod h1:qjN5Ulawdts3nakUshfsx7phr//cFWAn5hugUoefk5Q=
+golang.org/x/sync v0.0.0-20181108010431-42b317875d0f h1:Bl/8QSvNqXvPGPGXa2z5xUTmV7VDcZyvRZ+QQXkXTZQ=
+golang.org/x/sync v0.0.0-20181108010431-42b317875d0f/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/tools v0.0.0-20181218204010-d4971274fe38 h1:e07OqjPO5oqQAJqid1fAwyMi/IK+hfSYrivMpzzAJtU=
 golang.org/x/tools v0.0.0-20181218204010-d4971274fe38/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
