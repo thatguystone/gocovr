@@ -22,7 +22,7 @@ func testDump(t *testing.T, includeRe, excludeRe string, showCovered bool, files
 }
 
 func TestData0(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", true, "test_fixtures/0", "test_fixtures/0")
+	c, out, errs := testDump(t, ".*", "^$", true, "testdata/0", "testdata/0")
 	c.Must.Equal(0, len(errs))
 
 	tests := []string{
@@ -42,7 +42,7 @@ func TestData0(t *testing.T) {
 }
 
 func TestData0DontShowCovered(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", false, "test_fixtures/0", "test_fixtures/0")
+	c, out, errs := testDump(t, ".*", "^$", false, "testdata/0", "testdata/0")
 	c.Must.Equal(0, len(errs))
 
 	tests := []string{
@@ -61,7 +61,7 @@ func TestData0DontShowCovered(t *testing.T) {
 }
 
 func TestData0Filter(t *testing.T) {
-	c, out, _ := testDump(t, "5.go", "^$", true, "test_fixtures/0")
+	c, out, _ := testDump(t, "5.go", "^$", true, "testdata/0")
 
 	tests := []string{
 		`5.go\s*63\s*51\s*81.0%`,
@@ -77,7 +77,7 @@ func TestData0Filter(t *testing.T) {
 }
 
 func TestData0Exclude(t *testing.T) {
-	c, out, _ := testDump(t, ".*", `[0-46-9]\.go`, true, "test_fixtures/0")
+	c, out, _ := testDump(t, ".*", `[0-46-9]\.go`, true, "testdata/0")
 
 	tests := []string{
 		`5.go\s*63\s*51\s*81.0%`,
@@ -93,7 +93,7 @@ func TestData0Exclude(t *testing.T) {
 }
 
 func TestData1(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", true, "test_fixtures/1")
+	c, out, errs := testDump(t, ".*", "^$", true, "testdata/1")
 
 	c.Equal(0, len(errs))
 	c.Equal("No files covered.\n", out.String())
@@ -120,7 +120,7 @@ func TestInvalidFilter(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.what, func(t *testing.T) {
-			c, out, errs := testDump(t, test.includeRe, test.excludeRe, true, "test_fixtures/1")
+			c, out, errs := testDump(t, test.includeRe, test.excludeRe, true, "testdata/1")
 			c.Equal(0, out.Len())
 			c.True(strings.HasPrefix(errs[0].Error(), "invalid "+test.what+" pattern:"),
 				"Got error: %s", errs[0].Error())
@@ -139,7 +139,7 @@ func TestInvalidCoverageFile(t *testing.T) {
 }
 
 func TestData2(t *testing.T) {
-	c, out, errs := testDump(t, ".*", "^$", true, "test_fixtures/2")
+	c, out, errs := testDump(t, ".*", "^$", true, "testdata/2")
 	c.Must.Equal(0, len(errs))
 
 	tests := []string{
