@@ -8,13 +8,12 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strings"
-
-	"os"
 )
 
 const (
