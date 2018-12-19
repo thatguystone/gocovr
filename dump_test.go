@@ -30,7 +30,7 @@ func TestData0(t *testing.T) {
 		`5.go\s*63\s*51\s*81.0%`,
 		`3.go\s*37\s*0\s*0.0%\s*31-108`,
 		`19.go\s*1\s*0\s*0.0%\s*1`,
-		`TOTAL\s*1459\s*431\s*29.5%`,
+		`TOTAL\s*1533\s*484\s*31.6%`,
 	}
 
 	c.Log(out)
@@ -49,10 +49,11 @@ func TestData0DontShowCovered(t *testing.T) {
 		`5.go\s*63\s*51\s*81.0%`,
 		`3.go\s*37\s*0\s*0.0%\s*31-108`,
 		`19.go\s*1\s*0\s*0.0%\s*1`,
-		`TOTAL\s*1459\s*431\s*29.5%`,
+		`TOTAL\s*1533\s*484\s*31.6%`,
 	}
 
 	c.Log(out)
+	c.NotContains(out, "100.0%")
 
 	for _, t := range tests {
 		r := regexp.MustCompile(t)
