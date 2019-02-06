@@ -20,7 +20,7 @@ func hasLines(c *check.C, out string, lines []string) {
 	for _, line := range lines {
 		linere := strings.ReplaceAll(line, "\t", "\\s*")
 		r := regexp.MustCompile(linere)
-		c.True(r.MatchString(out), "%s did not match", line)
+		c.Truef(r.MatchString(out), "%s did not match", line)
 	}
 }
 
