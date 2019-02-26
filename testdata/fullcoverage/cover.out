@@ -1,0 +1,2 @@
+mode: set
+github.com/thatguystone/gocovr/testdata/fullcoverage/a.go:3.10,5.2 1 1

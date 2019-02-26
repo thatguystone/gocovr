@@ -1,0 +1,18 @@
+mode: set
+github.com/thatguystone/gocovr/testdata/basic/b.go:3.20,4.7 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:8.2,8.7 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:12.2,12.7 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:4.7,6.3 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:8.7,10.3 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:12.7,14.3 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:17.19,18.25 1 0
+github.com/thatguystone/gocovr/testdata/basic/b.go:18.25,20.3 1 0
+github.com/thatguystone/gocovr/testdata/basic/covered.go:3.16,5.2 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:3.20,4.7 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:8.2,8.7 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:12.2,12.7 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:4.7,6.3 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:8.7,10.3 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:12.7,14.3 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:17.19,18.25 1 1
+github.com/thatguystone/gocovr/testdata/basic/a.go:18.25,20.3 1 1
