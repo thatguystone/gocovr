@@ -1,4 +1,4 @@
-# gocovr [![Build Status](https://travis-ci.org/thatguystone/gocovr.svg)](https://travis-ci.org/thatguystone/gocovr)
+# gocovr [![Build Status](https://github.com/thatguystone/gocovr/workflows/test/badge.svg)](https://github.com/thatguystone/gocovr/actions)
 
 Very simple coverage reporting for golang, that supports coverage reporting on multiple packages!
 
