@@ -7,7 +7,7 @@ import (
 )
 
 func TestLCP(t *testing.T) {
-	c := check.New(t)
+	c := check.NewT(t)
 
 	tests := []struct {
 		a   string

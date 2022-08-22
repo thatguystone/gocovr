@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/thatguystone/cog v0.0.0-20190206201955-cb23b13a7afb h1:rj+jBYA+sx+7fwmubvt1K2KJH5m1aGXo6od4JKoHCio=
-github.com/thatguystone/cog v0.0.0-20190206201955-cb23b13a7afb/go.mod h1:qjN5Ulawdts3nakUshfsx7phr//cFWAn5hugUoefk5Q=
+github.com/thatguystone/cog v0.0.0-20220822191731-d909dcd61c3f h1:FnXk9fVB7JF4bKkee3GzplEU2FmfUoACPlYGWAw5zPY=
+github.com/thatguystone/cog v0.0.0-20220822191731-d909dcd61c3f/go.mod h1:qrIV9w4B3vVDH8GAR8FHjq+rbaDf8dGJ1Y89I35zADU=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4 h1:YUO/7uOKsKeq9UokNS62b8FYywz3ker1l1vDZRCRefw=
 golang.org/x/sync v0.0.0-20181221193216-37e7f081c4d4/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/tools v0.0.0-20190206175659-4892ae6946ab h1:sdt20jFck8SCqI78a71BatxIf/EDLZJpgR2DuQaMMdE=
