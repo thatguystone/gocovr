@@ -1,6 +1,6 @@
 module github.com/thatguystone/gocovr
 
-go 1.19
+go 1.20
 
 require (
 	github.com/thatguystone/cog v0.0.0-20220822191731-d909dcd61c3f
