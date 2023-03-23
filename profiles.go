@@ -191,6 +191,11 @@ func (*profilesMaker) ignoreFile(path string) (bool, error) {
 
 	s := bufio.NewScanner(f)
 	for s.Scan() {
+		l := s.Text()
+		if strings.HasPrefix(l, "import ") {
+			break
+		}
+
 		if s.Text() == "//gocovr:skip-file" {
 			return true, nil
 		}
