@@ -26,7 +26,15 @@ func run() int {
 	coverFile := flag.Arg(0)
 
 	if coverFile == "test" {
-		coverFile = "gocovr-cover.out"
+		f, err := os.CreateTemp("", "gocovr-*")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			return 1
+		}
+
+		f.Close()
+
+		coverFile = f.Name()
 		defer os.Remove(coverFile)
 
 		args := []string{"test"}
@@ -38,7 +46,7 @@ func run() int {
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 
-		err := cmd.Run()
+		err = cmd.Run()
 		if err != nil {
 			// No need to print error if the command exit; go will have printed
 			// enough error info.
