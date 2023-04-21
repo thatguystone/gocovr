@@ -48,8 +48,8 @@ func run() int {
 
 		err = cmd.Run()
 		if err != nil {
-			// No need to print error if the command exit; go will have printed
-			// enough error info.
+			// No need to print error if the command exited; go will have
+			// printed enough error info.
 			if _, ok := err.(*exec.ExitError); !ok {
 				fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 			}
