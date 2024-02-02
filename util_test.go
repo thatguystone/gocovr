@@ -7,8 +7,6 @@ import (
 )
 
 func TestLCP(t *testing.T) {
-	c := check.NewT(t)
-
 	tests := []struct {
 		a   string
 		b   string
@@ -33,6 +31,6 @@ func TestLCP(t *testing.T) {
 
 	for _, test := range tests {
 		res := lcp(test.a, test.b)
-		c.Equal(res, test.lcp)
+		check.Equal(t, res, test.lcp)
 	}
 }
