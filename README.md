@@ -1,6 +1,6 @@
 # gocovr [![Build Status](https://github.com/thatguystone/gocovr/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/thatguystone/gocovr/actions/workflows/test.yml)
 
-Very simple coverage reporting for golang, that supports coverage reporting on multiple packages!
+Very simple coverage reporting for golang.
 
 Sample output:
 
