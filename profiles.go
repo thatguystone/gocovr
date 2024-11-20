@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -181,6 +182,9 @@ func (*profilesMaker) coalesce(bs []cover.ProfileBlock) (res []cover.ProfileBloc
 	return
 }
 
+// https://pkg.go.dev/cmd/go#hdr-Generate_Go_files_by_processing_source/
+var genRe = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`)
+
 func (*profilesMaker) ignoreFile(path string) (bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -196,7 +200,11 @@ func (*profilesMaker) ignoreFile(path string) (bool, error) {
 			break
 		}
 
-		if s.Text() == "//gocovr:skip-file" {
+		if genRe.MatchString(l) {
+			return true, nil
+		}
+
+		if l == "//gocovr:skip-file" {
 			return true, nil
 		}
 	}
