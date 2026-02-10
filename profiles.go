@@ -112,8 +112,6 @@ func (pm *profilesMaker) addAllProfiles() error {
 	var g errgroup.Group
 
 	for _, covProf := range pm.covProfs {
-		covProf := covProf
-
 		g.Go(func() error {
 			return pm.addProfile(covProf)
 		})
