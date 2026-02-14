@@ -1,0 +1,9 @@
+mode: set
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:11.20,12.11 1 1
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:13.9,14.9 1 1
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:15.9,16.23 1 0
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:17.9,18.23 1 0
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:19.9,20.23 1 0
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:21.9,23.43 2 0
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:24.9,26.43 1 0
+github.com/thatguystone/gocovr/testdata/unreachable/unreachable.go:27.9,29.44 1 0

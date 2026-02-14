@@ -33,10 +33,10 @@ func TestDumpBasic(t *testing.T) {
 
 	check.False(t, strings.Contains(out, "a.go"))
 	hasLines(t, out, []string{
-		"b.go	8	0	0.0%	3-20",
-		"TOTAL	17	9	52.9%",
+		"b.go        8      0     0.0%   3-20",
+		"oneline.go  1      0     0.0%   3",
+		"TOTAL       18     9     50.0%",
 	})
-
 }
 
 func TestDumpShowCovered(t *testing.T) {
@@ -49,7 +49,7 @@ func TestDumpShowCovered(t *testing.T) {
 	hasLines(t, out, []string{
 		"a.go	8	8	100.0%",
 		"b.go	8	0	0.0%	3-20",
-		"TOTAL	17	9	52.9%",
+		"TOTAL	18	9	50.0%",
 	})
 }
 
@@ -92,4 +92,36 @@ func TestDumpInvalidCoverageFile(t *testing.T) {
 
 	_, err := testDump("testdata/basic/a.go", true)
 	check.NotNil(t, err)
+}
+
+func TestDumpEmptyCoverageFile(t *testing.T) {
+	t.Parallel()
+
+	_, err := testDump("testdata/empty/cover.out", true)
+	check.Nil(t, err)
+}
+
+func TestDumpUnreachable(t *testing.T) {
+	t.Parallel()
+
+	out, err := testDump("testdata/unreachable/cover.out", true)
+	check.MustNil(t, err)
+	t.Log(out)
+
+	hasLines(t, out, []string{
+		"unreachable.go  9      9     100.0%",
+	})
+}
+
+func TestDumpIgnore(t *testing.T) {
+	t.Parallel()
+
+	out, err := testDump("testdata/ignore/cover.out", true)
+	check.MustNil(t, err)
+	t.Log(out)
+
+	hasLines(t, out, []string{
+		"ignore.go  1      0     0.0%   3-4",
+		"TOTAL      1      0     0.0%",
+	})
 }

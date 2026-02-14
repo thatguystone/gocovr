@@ -2,8 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"cmp"
 	"fmt"
+	"io"
+	"iter"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -99,13 +102,26 @@ func (pm *profilesMaker) addAllProfiles() error {
 }
 
 func (pm *profilesMaker) addProfile(covProf *cover.Profile) error {
-	absPath, ok := pm.sourceFiles[covProf.FileName]
+	srcPath, ok := pm.sourceFiles[covProf.FileName]
 	if !ok {
 		return fmt.Errorf("could not locate source file for %s", covProf.FileName)
 	}
 
-	ignore, err := pm.ignoreFile(absPath)
+	src, err := os.Open(srcPath)
+	if err != nil {
+		return err
+	}
+
+	defer src.Close()
+
+	ignore, err := ignoreFile(src)
 	if ignore || err != nil {
+		return err
+	}
+
+	// ignoreFile might read the whole file
+	_, err = src.Seek(0, io.SeekStart)
+	if err != nil {
 		return err
 	}
 
@@ -113,7 +129,11 @@ func (pm *profilesMaker) addProfile(covProf *cover.Profile) error {
 		filename: covProf.FileName,
 	}
 
-	for _, b := range pm.coalesce(covProf.Blocks) {
+	for b, err := range iterBlocks(covProf.Blocks, src) {
+		if err != nil {
+			return err
+		}
+
 		p.total += b.NumStmt
 		if b.Count > 0 {
 			p.exec += b.NumStmt
@@ -137,42 +157,19 @@ func (pm *profilesMaker) addProfile(covProf *cover.Profile) error {
 	return nil
 }
 
-func (*profilesMaker) coalesce(bs []cover.ProfileBlock) (res []cover.ProfileBlock) {
-	for _, b := range bs {
-		if len(res) > 0 {
-			prev := &res[len(res)-1]
-
-			// Two "misses" next to each other can always be joined
-			if b.Count == 0 && prev.Count == 0 {
-				prev.EndLine = b.EndLine
-				prev.EndCol = b.EndCol
-				prev.NumStmt += b.NumStmt
-				prev.Count += b.Count
-				continue
-			}
-		}
-
-		res = append(res, b)
-	}
-
-	return
-}
-
 // https://pkg.go.dev/cmd/go#hdr-Generate_Go_files_by_processing_source/
 var genRe = regexp.MustCompile(`^// Code generated .* DO NOT EDIT\.$`)
 
-func (*profilesMaker) ignoreFile(path string) (bool, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return false, err
-	}
-
-	defer f.Close()
-
-	s := bufio.NewScanner(f)
-	for s.Scan() {
-		l := s.Text()
-		if strings.HasPrefix(l, "import ") {
+func ignoreFile(src io.Reader) (bool, error) {
+	sc := bufio.NewScanner(src)
+	for sc.Scan() {
+		l := sc.Text()
+		done := strings.HasPrefix(l, "import ") ||
+			strings.HasPrefix(l, "type ") ||
+			strings.HasPrefix(l, "const ") ||
+			strings.HasPrefix(l, "var ") ||
+			strings.HasPrefix(l, "func ")
+		if done {
 			break
 		}
 
@@ -185,5 +182,115 @@ func (*profilesMaker) ignoreFile(path string) (bool, error) {
 		}
 	}
 
-	return false, s.Err()
+	return false, sc.Err()
+}
+
+func iterBlocks(
+	bs []cover.ProfileBlock,
+	src *os.File,
+) iter.Seq2[cover.ProfileBlock, error] {
+	return func(yield func(cover.ProfileBlock, error) bool) {
+		prev := bs[0]
+		it := fileIter{sc: bufio.NewScanner(src)}
+		for _, b := range bs[1:] {
+			if b.Count == 0 {
+				ignore, err := it.ignoreBlock(b)
+				if err != nil {
+					yield(b, err)
+					return
+				}
+
+				if ignore {
+					b.Count = 1
+				}
+			}
+
+			// Two "misses" next to each other can always be joined
+			if b.Count == 0 && prev.Count == 0 {
+				prev.EndLine = b.EndLine
+				prev.EndCol = b.EndCol
+				prev.NumStmt += b.NumStmt
+				prev.Count += b.Count
+				continue
+			}
+
+			if !yield(prev, nil) {
+				return
+			}
+
+			prev = b
+		}
+
+		yield(prev, nil)
+	}
+}
+
+type fileIter struct {
+	sc     *bufio.Scanner
+	buf    bytes.Buffer
+	lineno int
+}
+
+func (it *fileIter) scan() bool {
+	ok := it.sc.Scan()
+	if ok {
+		it.lineno++
+	}
+	return ok
+}
+
+var unreachables = [][]byte{
+	[]byte("assert.unreachable("),
+	[]byte(`panic("unreachable`),
+	[]byte("panic(`unreachable"),
+	[]byte(`panic(fmt.errorf("unreachable`),
+	[]byte("panic(fmt.errorf(`unreachable"),
+	[]byte(`panic(fmt.sprintf("unreachable`),
+	[]byte("panic(fmt.sprintf(`unreachable"),
+}
+
+func (it *fileIter) ignoreBlock(b cover.ProfileBlock) (bool, error) {
+	for it.lineno < b.StartLine {
+		if !it.scan() {
+			return false, it.sc.Err()
+		}
+	}
+
+	it.buf.Reset()
+	add := func(b []byte) {
+		b = bytes.TrimSpace(b)
+		if bytes.HasPrefix(b, []byte("//")) {
+			return
+		}
+
+		b = bytes.ToLower(b)
+		it.buf.Write(b)
+	}
+
+	if b.StartLine == b.EndLine {
+		add(it.sc.Bytes()[b.StartCol-1 : b.EndCol-1])
+	} else {
+		add(it.sc.Bytes()[b.StartCol-1:])
+
+		for {
+			if !it.scan() {
+				return false, it.sc.Err()
+			}
+
+			if it.lineno == b.EndLine {
+				add(it.sc.Bytes()[:b.EndCol-1])
+				break
+			}
+
+			add(it.sc.Bytes())
+		}
+	}
+
+	for _, s := range unreachables {
+		if bytes.Contains(it.buf.Bytes(), s) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
