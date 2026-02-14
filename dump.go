@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 )
@@ -18,7 +20,20 @@ func dump(out io.Writer, file string, showCovered bool) error {
 		return nil
 	}
 
-	base := profs.getBase()
+	base := ""
+	for _, prof := range profs {
+		if base == "" {
+			base = prof.filename
+		} else {
+			base = lcp(base, prof.filename)
+		}
+	}
+
+	sep := fmt.Sprintf("%c", os.PathSeparator)
+	if !strings.HasSuffix(base, sep) {
+		base = filepath.Dir(base) + sep
+	}
+
 	fmt.Fprintf(out, "\nBase: %s\n\n", base)
 
 	w := newWriter(out)

@@ -2,11 +2,12 @@ package main
 
 import (
 	"bufio"
+	"cmp"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 
@@ -14,31 +15,6 @@ import (
 	"golang.org/x/tools/cover"
 	"golang.org/x/tools/go/packages"
 )
-
-type profiles []*profile
-
-func (s profiles) Len() int           { return len(s) }
-func (s profiles) Less(i, j int) bool { return s[i].filename < s[j].filename }
-func (s profiles) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
-
-func (s profiles) getBase() string {
-	base := ""
-
-	for _, p := range s {
-		if base == "" {
-			base = p.filename
-		} else {
-			base = lcp(base, p.filename)
-		}
-	}
-
-	sep := fmt.Sprintf("%c", os.PathSeparator)
-	if !strings.HasSuffix(base, sep) {
-		base = filepath.Dir(base) + sep
-	}
-
-	return base
-}
 
 type profile struct {
 	filename    string
@@ -51,10 +27,10 @@ type profilesMaker struct {
 	sourceFiles map[string]string
 
 	mtx sync.Mutex
-	s   profiles
+	s   []*profile
 }
 
-func makeProfiles(file string) (profiles, error) {
+func makeProfiles(file string) ([]*profile, error) {
 	covProfs, err := cover.ParseProfiles(file)
 	if err != nil {
 		return nil, fmt.Errorf("invalid coverage profile: %v", err)
@@ -74,7 +50,9 @@ func makeProfiles(file string) (profiles, error) {
 		return nil, err
 	}
 
-	sort.Sort(pm.s)
+	slices.SortFunc(pm.s, func(a, b *profile) int {
+		return cmp.Compare(a.filename, b.filename)
+	})
 
 	return pm.s, nil
 }
